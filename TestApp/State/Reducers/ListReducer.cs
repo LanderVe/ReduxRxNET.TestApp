@@ -41,36 +41,30 @@ namespace TestApp.State.Reducers
         state = initialValue;
       }
 
-      var searchAction = action as SearchListAction;
-      if (searchAction != null)
+      switch (action)
       {
-        return new ListSearchState(
-                  searchTerm: searchAction.Term,
-                  isSearching: true,
-                  contactIds: ImmutableList<int>.Empty //clear previous result
-                );
+        case SearchListAction a:
+          return new ListSearchState(
+            searchTerm: a.Term,
+            isSearching: true,
+            contactIds: ImmutableList<int>.Empty //clear previous result
+          );
+        case SearchListSuccessAction a:
+          return new ListSearchState(
+            searchTerm: state.SearchTerm,
+            isSearching: false,
+            contactIds: a.Data
+          );
+        case SearchListFailAction a:
+          return new ListSearchState(
+            searchTerm: state.SearchTerm,
+            isSearching: false,
+            contactIds: ImmutableList<int>.Empty //clear previous result
+          );
+        default:
+          return state;
       }
 
-      var successAction = action as SearchListSuccessAction;
-      if (successAction != null)
-      {
-        return new ListSearchState(
-                  searchTerm: state.SearchTerm,
-                  isSearching: false,
-                  contactIds: successAction.Data
-                );
-      }
-
-      if (action is SearchListFailAction)
-      {
-        return new ListSearchState(
-                  searchTerm: state.SearchTerm,
-                  isSearching: false,
-                  contactIds: ImmutableList<int>.Empty //clear previous result
-                );
-      }
-
-      return state;
     }
 
   }
@@ -90,50 +84,47 @@ namespace TestApp.State.Reducers
         state = initialValue;
       }
 
-      //select existing or new
-      var selectAction = action as SelectListItemAction;
-      if (selectAction != null)
+      switch (action)
       {
-        return new ListSelectedItemState(
-                  selectedId: selectAction.SelectedId,
-                  isSelectedSaving: false,
-                  isSelectedNew: selectAction.IsNew
-                );
+        //select existing or new
+        case SelectListItemAction a:
+          return new ListSelectedItemState(
+            selectedId: a.SelectedId,
+            isSelectedSaving: false,
+            isSelectedNew: a.IsNew
+          );
+        //start new, update, delete
+        case SaveNewContactAction sa:
+        case UpdateContactAction ua:
+        case DeleteContactAction da:
+          return new ListSelectedItemState(
+            selectedId: state.SelectedId,
+            isSelectedSaving: true,
+            isSelectedNew: state.IsSelectedNew
+          );
+        //success new, update, delete
+        case SaveNewContactSuccessAction sa:
+        case UpdateContactSuccessAction ua:
+        case DeleteContactSuccessAction da:
+          return new ListSelectedItemState(
+            selectedId: state.SelectedId,
+            isSelectedSaving: false,
+            isSelectedNew: state.IsSelectedNew
+          );
+        //fail new, update, delete
+        case SaveNewContactFailAction sa:
+        case UpdateContactFailAction ua:
+        case DeleteContactFailAction da:
+          return new ListSelectedItemState(
+            selectedId: state.SelectedId,
+            isSelectedSaving: false,
+            isSelectedNew: state.IsSelectedNew,
+            error: GetErrorForType(action)
+          );
+        default:
+          return state;
       }
 
-      //start new, update, delete
-      if (action is SaveNewContactAction || action is UpdateContactAction || action is DeleteContactAction)
-      {
-        return new ListSelectedItemState(
-                  selectedId: state.SelectedId,
-                  isSelectedSaving: true,
-                  isSelectedNew: state.IsSelectedNew
-                );
-      }
-
-      //success new, update, delete
-      if (action is SaveNewContactSuccessAction || action is UpdateContactSuccessAction || action is DeleteContactSuccessAction)
-      {
-        return new ListSelectedItemState(
-                  selectedId: state.SelectedId,
-                  isSelectedSaving: false,
-                  isSelectedNew: state.IsSelectedNew
-                );
-      }
-
-      //fail new, update, delete
-      if (action is SaveNewContactFailAction || action is UpdateContactFailAction || action is DeleteContactFailAction)
-      {
-        return new ListSelectedItemState(
-                  selectedId: state.SelectedId,
-                  isSelectedSaving: false,
-                  isSelectedNew: state.IsSelectedNew,
-                  error: GetErrorForType(action)
-                );
-      }
-
-
-      return state;
     }
 
     private string GetErrorForType(object action)
